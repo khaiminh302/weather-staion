@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Graph Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.bundle.js"></script>
+    <!-- <script src="D:\Projects\WeatherStation\web\node_modules\chart.js\samples"></script> -->
+    <style>
+        canvas{
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/4.1.3/firebase.js"></script>
+    <script>
+        // Initialize Firebase
+        var config = {
+            apiKey: "AIzaSyDMTLMd1hom-F_tugcI9f_76fTBrd2uu30",
+            authDomain: "weatherstation-60f5e.firebaseapp.com",
+            databaseURL: "https://weatherstation-60f5e.firebaseio.com",
+            projectId: "weatherstation-60f5e",
+            storageBucket: "weatherstation-60f5e.appspot.com",
+            messagingSenderId: "737507835443"
+        };
+        firebase.initializeApp(config);
+    </script>
+</head>
+
+<body>
+    <div style="width:75%;">
+        <canvas id="canvas"></canvas>
+    </div>
+    <br>
+    <br>
+    <button id="start">Start</button>
+    <p id="demo"></p>
+    <script>
+        window.chartColors = {
+        	red: 'rgb(255, 99, 132)',
+        	orange: 'rgb(255, 159, 64)',
+        	yellow: 'rgb(255, 205, 86)',
+        	green: 'rgb(75, 192, 192)',
+        	blue: 'rgb(54, 162, 235)',
+        	purple: 'rgb(153, 102, 255)',
+        	grey: 'rgb(231,233,237)'
+        };
+
+        window.randomScalingFactor = function() {
+        	return (Math.random() > 0.5 ? 1.0 : -1.0) * Math.round(Math.random() * 100);
+        }
+
+        var database = firebase.database();
+
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user) {
+                // User is signed in
+                if (user.isAnonymous) {
+                    console.log('Anonymous');
+                    console.log('UID: ' + user.uid);
+                } else {
+                    console.log('Email: ' + user.email);
+                    console.log('UID: ' + user.uid);
+                }
+            } else {
+                console.log('Signed out');
+            }
+        });
+
+        window.onload = function() {
+            console.log('guest');
+            firebase.auth().signInAnonymously().catch(function(error) {
+                var errorCode = error.code;
+                var errorMessage = error.message;
+            });
+        };
+
+        document.getElementById("start").addEventListener("click", function () {
+            var ref = database.ref('temperature').orderByChild('timestamp');
+            //.startAt(startTime.valueOf()).endAt(endTime.valueOf());
+            ref.once('value', function(snapshot) {
+                var data = snapshot.val();
+                if (data == null) {
+                    console.log('No history data found!');
+                    return;
+                }
+                // console.log(data);
+                var labelList = [];
+                var valueList = [];
+                for (item in data) {
+                    labelList.push(data[item].time_stamp);
+                    valueList.push(data[item].value);
+                }
+                document.getElementById("demo").innerHTML = item;
+                var config = {
+                    type: 'line',
+                    data: {
+                        labels: labelList,
+                        datasets: [{
+                            label: "Temperature",
+                            backgroundColor: window.chartColors.red,
+                            borderColor: window.chartColors.red,
+                            data: valueList,
+                            fill: false,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        title:{
+                            display:true,
+                            text:'Temperature',
+
+                        },
+                        tooltips: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        hover: {
+                            mode: 'nearest',
+                            intersect: true
+                        },
+                        scales: {
+                            xAxes: [{
+                                display: true,
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'Time stamp'
+                                }
+                            }],
+                            yAxes: [{
+                                display: true,
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'Value'
+                                }
+                            }]
+                        }
+                    }
+                };
+                var ctx = document.getElementById("canvas").getContext("2d");
+                window.myLine = new Chart(ctx, config);
+            });
+        });
+    </script>
+</body>
+
+</html>
